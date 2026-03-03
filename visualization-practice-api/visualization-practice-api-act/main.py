@@ -225,28 +225,41 @@ async def get_plot_data(slo:str,measure:str,start_date:str,end_date:str):
 
     slo = slo.upper()
     measure = measure.upper()
-    dates_from_start = await get_all_measure_dates_after_start(slo,measure,start_date)
+    dates_from_start = await get_all_measure_dates_after_start(slo, measure, start_date)
 
     dates_from_start_to_end = get_dates_up_to_end_date(dates_from_start, end_date)
 
-    #if there are missing dates/percentage/met we have to/fill in the data with fillers like 0, in the correct places.
-    t1_values = get_all_target_values(slo, measure,"T1")
-    
-    percentages_met_t1 = get_all_percentage_met_values(
-        slo, measure, "T1")
-    
+    # Align all target/percentage arrays to the exact date range the
+    # frontend requested so indexes always match plotData.dates.
+    t1_values = []
+    percentages_met_t1 = []
+    t2_values = []
+    percentages_met_t2 = []
 
-    most_recent_t1_description = get_most_recent_target_description(
-        slo, measure, "T1")
+    slo_measure_obj = dict_db[slo][measure]
+    t1_obj = slo_measure_obj.get("T1", {})
+    t2_obj = slo_measure_obj.get("T2", {}) if has_two_targets(slo, measure) else {}
 
-    most_recent_t2_description =  get_most_recent_target_description(
-        slo, measure, "T2") if has_two_targets(slo, measure) else []
+    for date in dates_from_start_to_end:
+        # T1 values
+        if date in t1_obj:
+            entry_t1 = t1_obj[date]
+            t1_values.append(entry_t1.get("target"))
+            percentages_met_t1.append(entry_t1.get("percentage"))
+        else:
+            # Keep arrays aligned; use None when data is missing
+            t1_values.append(None)
+            percentages_met_t1.append(None)
 
-    percentages_met_t2 = get_all_percentage_met_values(
-        slo, measure, "T2") if has_two_targets(slo, measure) else []
-
-    t2_values = get_all_target_values(
-        slo, measure, "T2") if has_two_targets(slo, measure) else []
+        # T2 values (only if this SLO/measure actually has T2)
+        if t2_obj:
+            if date in t2_obj:
+                entry_t2 = t2_obj[date]
+                t2_values.append(entry_t2.get("target"))
+                percentages_met_t2.append(entry_t2.get("percentage"))
+            else:
+                t2_values.append(None)
+                percentages_met_t2.append(None)
 
     title = create_plot_title_multi_target(slo, measure)
 
