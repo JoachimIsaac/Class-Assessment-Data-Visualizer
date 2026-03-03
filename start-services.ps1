@@ -4,7 +4,7 @@ Write-Host ""
 
 # Start Backend API
 Write-Host "Starting Backend API..." -ForegroundColor Yellow
-Set-Location "visualization-practice-api\visualization-practice-api-2c1d5a6c2c96d69c6b73051a447313cb1fe748b4"
+Set-Location "visualization-practice-api\visualization-practice-api-act"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000" -WindowStyle Normal
 
 # Wait a moment for backend to start
