@@ -729,10 +729,17 @@ function plotChartWithBothTargets(requestUrl) {
                 .padding(0.1);
             
             // Y axis
-            const maxT1Percentage = d3.max(chartData, d => d.t1Percentage);
-            const maxT2Percentage = d3.max(chartData, d => d.t2Percentage);
+            const t1Percentages = chartData
+                .map(d => d.t1Percentage)
+                .filter(value => Number.isFinite(value));
+            const t2Percentages = chartData
+                .map(d => d.t2Percentage)
+                .filter(value => Number.isFinite(value));
+
+            const maxT1Percentage = t1Percentages.length > 0 ? d3.max(t1Percentages) : 0;
+            const maxT2Percentage = t2Percentages.length > 0 ? d3.max(t2Percentages) : 0;
             const maxPercentage = Math.max(maxT1Percentage, maxT2Percentage);
-            const yAxisMax = maxPercentage * 1.15;
+            const yAxisMax = Number.isFinite(maxPercentage) && maxPercentage > 0 ? maxPercentage * 1.15 : 100;
             
             console.log('Y-axis calculation:', { 
                 maxT1Percentage, 
@@ -803,6 +810,7 @@ function plotChartWithBothTargets(requestUrl) {
             
             // T1 Line
             const t1Line = d3.line()
+                .defined(d => Number.isFinite(d.t1Percentage))
                 .x(d => xScale(d.date) + xScale.bandwidth() / 2)
                 .y(d => yScale(d.t1Percentage))
                 .curve(d3.curveMonotoneX);
@@ -816,6 +824,7 @@ function plotChartWithBothTargets(requestUrl) {
             
             // T2 Line
             const t2Line = d3.line()
+                .defined(d => Number.isFinite(d.t2Percentage))
                 .x(d => xScale(d.date) + xScale.bandwidth() / 2)
                 .y(d => yScale(d.t2Percentage))
                 .curve(d3.curveMonotoneX);
@@ -829,7 +838,7 @@ function plotChartWithBothTargets(requestUrl) {
             
             // T1 Points
             svg.selectAll('.t1-points')
-                .data(chartData)
+                .data(chartData.filter(d => Number.isFinite(d.t1Percentage)))
                 .enter()
                 .append('rect')
                 .attr('class', 't1-points')
@@ -852,7 +861,7 @@ function plotChartWithBothTargets(requestUrl) {
             
             // T2 Points
             svg.selectAll('.t2-points')
-                .data(chartData)
+                .data(chartData.filter(d => Number.isFinite(d.t2Percentage)))
                 .enter()
                 .append('polygon')
                 .attr('class', 't2-points')
@@ -965,6 +974,11 @@ function plotChartWithBothTargets(requestUrl) {
             }
         }
         
+    }).catch((error) => {
+        console.error('Failed to load plot data for both targets.', error);
+        if (window.AppLoader) {
+            window.AppLoader.hideLoading();
+        }
     });
         
     }, 2000);
@@ -1046,8 +1060,11 @@ function plotChartBasedOnTargets(requestUrl, target) {
                 .padding(0.1);
             
             // Y axis
-            const maxPercentage = d3.max(chartData, d => d.percentage);
-            const yAxisMax = maxPercentage * 1.15;
+            const percentages = chartData
+                .map(d => d.percentage)
+                .filter(value => Number.isFinite(value));
+            const maxPercentage = percentages.length > 0 ? d3.max(percentages) : 0;
+            const yAxisMax = Number.isFinite(maxPercentage) && maxPercentage > 0 ? maxPercentage * 1.15 : 100;
             
             console.log('Single target Y-axis calculation:', { 
                 maxPercentage, 
@@ -1116,6 +1133,7 @@ function plotChartBasedOnTargets(requestUrl, target) {
             
             // Line
             const line = d3.line()
+                .defined(d => Number.isFinite(d.percentage))
                 .x(d => xScale(d.date) + xScale.bandwidth() / 2)
                 .y(d => yScale(d.percentage))
                 .curve(d3.curveMonotoneX);
@@ -1134,7 +1152,7 @@ function plotChartBasedOnTargets(requestUrl, target) {
             if (target === "T1") {
                 // Square points for T1
                 svg.selectAll('.target-points')
-                    .data(chartData)
+                    .data(chartData.filter(d => Number.isFinite(d.percentage)))
                     .enter()
                     .append('rect')
                     .attr('class', 'target-points')
@@ -1157,7 +1175,7 @@ function plotChartBasedOnTargets(requestUrl, target) {
             } else {
                 // Star points for T2
                 svg.selectAll('.target-points')
-                    .data(chartData)
+                    .data(chartData.filter(d => Number.isFinite(d.percentage)))
                     .enter()
                     .append('polygon')
                     .attr('class', 'target-points')
@@ -1262,6 +1280,11 @@ function plotChartBasedOnTargets(requestUrl, target) {
             }
         }
      
+    }).catch((error) => {
+        console.error(`Failed to load plot data for target ${target}.`, error);
+        if (window.AppLoader) {
+            window.AppLoader.hideLoading();
+        }
     });
         
     }, 2000);
